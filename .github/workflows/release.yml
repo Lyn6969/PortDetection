@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如: v0.1.1)'
+        required: true
+        default: 'v0.1.0'
 
 jobs:
   build-windows:
@@ -11,9 +17,50 @@ jobs:
       contents: write
     runs-on: windows-latest
 
+    env:
+      VERSION: ${{ github.event.inputs.version || github.ref_name }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史用于生成 changelog
+
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: |
+            {
+              "categories": [
+                {
+                  "title": "## ✨ 新功能",
+                  "labels": ["feat", "feature"]
+                },
+                {
+                  "title": "## 🐛 Bug 修复",
+                  "labels": ["fix", "bug"]
+                },
+                {
+                  "title": "## 🔧 其他更改",
+                  "labels": []
+                }
+              ],
+              "template": "#{{CHANGELOG}}\n\n**完整提交记录**: #{{RELEASE_DIFF}}",
+              "pr_template": "- #{{TITLE}} (#{{NUMBER}})",
+              "empty_template": "- 无重大更改",
+              "transformers": [],
+              "label_extractor": [
+                {
+                  "pattern": "^(feat|fix|docs|style|refactor|perf|test|chore)(\\(.*\\))?:",
+                  "target": "$1"
+                }
+              ],
+              "commit_type": "commits",
+              "commit_template": "- {{subject}}"
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -33,24 +80,37 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build and release Tauri app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      - name: Rename portable exe
+        run: |
+          mv src-tauri/target/release/port-detection.exe src-tauri/target/release/PortDetection_${{ env.VERSION }}_x64_portable.exe
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'PortDetection ${{ github.ref_name }}'
-          releaseBody: |
-            ## PortDetection ${{ github.ref_name }}
+          tag_name: ${{ env.VERSION }}
+          files: |
+            src-tauri/target/release/PortDetection_${{ env.VERSION }}_x64_portable.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+          body: |
+            ## PortDetection ${{ env.VERSION }}
 
             Windows 端口检测与管理工具
 
-            ### 下载说明
-            - `.msi` - Windows 安装包
-            - `_x64-setup.exe` - 安装版
-            - `_x64_portable.exe` - 便携版（无需安装，直接运行）
+            ### 📋 更新内容
+            ${{ steps.changelog.outputs.changelog }}
 
-            ### 系统要求
+            ### 📦 下载说明
+            | 文件 | 说明 |
+            |------|------|
+            | `_x64_portable.exe` | **便携版** - 无需安装，直接运行 |
+            | `.msi` | Windows Installer 安装包 |
+            | `_x64-setup.exe` | NSIS 安装程序 |
+
+            ### 💻 系统要求
             - Windows 10/11 64-bit
-          releaseDraft: false
-          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
