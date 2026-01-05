@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter};
 
 use crate::core::monitor::{MonitorConfig, MonitorHandle, start_monitor_service};
 
@@ -31,6 +31,7 @@ pub async fn start_monitor(
     app: AppHandle,
     interval_ms: Option<u64>,
     listen_only: Option<bool>,
+    state: tauri::State<'_, MonitorState>,
 ) -> Result<(), String> {
     let config = MonitorConfig {
         interval_ms: interval_ms.unwrap_or(2000),
@@ -38,9 +39,16 @@ pub async fn start_monitor(
         ..Default::default()
     };
 
+    let mut guard = state.handle.lock().await;
+    if guard.is_some() {
+        return Err("监控已在运行".to_string());
+    }
+
     let (tx, mut rx) = mpsc::channel(32);
 
     let handle = start_monitor_service(config, tx).await;
+    *guard = Some(handle);
+    drop(guard);
 
     // 启动事件转发任务
     let app_clone = app.clone();
@@ -52,8 +60,6 @@ pub async fn start_monitor(
         }
     });
 
-    // 存储句柄以便后续停止
-    // 注意：这里简化处理，实际应该使用 Tauri 的状态管理
     tracing::info!("Monitor started");
 
     Ok(())
@@ -61,8 +67,12 @@ pub async fn start_monitor(
 
 /// 停止端口监控
 #[tauri::command]
-pub async fn stop_monitor() -> Result<(), String> {
-    // 简化实现，实际需要状态管理
-    tracing::info!("Monitor stop requested");
-    Ok(())
+pub async fn stop_monitor(state: tauri::State<'_, MonitorState>) -> Result<(), String> {
+    let mut guard = state.handle.lock().await;
+    if let Some(handle) = guard.take() {
+        handle.stop().await;
+        tracing::info!("Monitor stopped");
+        return Ok(());
+    }
+    Err("监控未运行".to_string())
 }
