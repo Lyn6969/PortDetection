@@ -11,11 +11,7 @@
   },
   "app": {
     "withGlobalTauri": true,
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": false
-    },
-    "windows": [
+        "windows": [
       {
         "title": "Port Detection",
         "width": 1000,
@@ -31,11 +27,7 @@
     }
   },
   "plugins": {
-    "notification": {
-      "all": true
-    },
     "shell": {
-      "all": false,
       "open": true
     }
   }

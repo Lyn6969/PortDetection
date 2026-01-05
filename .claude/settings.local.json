@@ -9,7 +9,17 @@
       "mcp__fetch__fetch",
       "Skill(codex)",
       "Bash(codex-wrapper:*)",
-      "Bash(codeagent-wrapper:*)"
+      "Bash(codeagent-wrapper:*)",
+      "Bash(npm install)",
+      "Bash(cargo check:*)",
+      "Bash(npx tauri icon --help:*)",
+      "Bash(npx tauri icon:*)",
+      "Bash(npm run build)",
+      "Bash(npm run tauri dev)",
+      "Bash(timeout:*)",
+      "Bash(findstr:*)",
+      "Bash(netstat:*)",
+      "Bash(netsh interface ipv4 show excludedportrange:*)"
     ]
   }
 }

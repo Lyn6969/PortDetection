@@ -27,6 +27,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::port::scan_all_ports,
             commands::port::query_port,
+            commands::port::get_reserved_ports,
+            commands::port::check_port_reserved,
             commands::process::get_process_info,
             commands::process::kill_process,
             commands::monitor::start_monitor,
