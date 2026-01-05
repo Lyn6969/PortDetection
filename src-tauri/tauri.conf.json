@@ -9,6 +9,15 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173"
   },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "windows": {
+      "nsis": {
+        "installMode": "both"
+      }
+    }
+  },
   "app": {
     "withGlobalTauri": true,
         "windows": [

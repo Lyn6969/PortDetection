@@ -1,0 +1,56 @@
+name: 'Release'
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build-windows:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri -> target'
+          cache-on-failure: true
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and release Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'PortDetection ${{ github.ref_name }}'
+          releaseBody: |
+            ## PortDetection ${{ github.ref_name }}
+
+            Windows 端口检测与管理工具
+
+            ### 下载说明
+            - `.msi` - Windows 安装包
+            - `_x64-setup.exe` - 安装版
+            - `_x64_portable.exe` - 便携版（无需安装，直接运行）
+
+            ### 系统要求
+            - Windows 10/11 64-bit
+          releaseDraft: false
+          prerelease: false
