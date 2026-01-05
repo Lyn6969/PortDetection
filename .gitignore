@@ -41,3 +41,6 @@ nul
 *.webp
 *.svg
 *.icns
+
+# 但保留 Tauri 图标
+!src-tauri/icons/
