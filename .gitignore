@@ -1,0 +1,43 @@
+# Node.js
+node_modules/
+package-lock.json
+
+# Vite 构建产物
+dist/
+
+# Rust/Tauri 构建产物
+src-tauri/target/
+
+# IDE 配置
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# 日志与临时文件
+*.log
+nul
+
+# 环境变量
+.env
+.env.*
+!.env.example
+
+# 其他
+*.local
+
+# 图片文件
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.ico
+*.webp
+*.svg
+
