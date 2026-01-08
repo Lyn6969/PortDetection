@@ -51,7 +51,8 @@ fn restart_as_admin() -> bool {
         None => return false,
     };
 
-    let path_wide: Vec<u16> = OsStr::new(&exe_path)
+    let path_wide: Vec<u16> = exe_path
+        .as_os_str()
         .encode_wide()
         .chain(std::iter::once(0))
         .collect();
