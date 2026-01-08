@@ -28,39 +28,33 @@ jobs:
 
       - name: Generate changelog
         id: changelog
-        uses: mikepenz/release-changelog-builder-action@v4
-        with:
-          configuration: |
-            {
-              "categories": [
-                {
-                  "title": "## ✨ 新功能",
-                  "labels": ["feat", "feature"]
-                },
-                {
-                  "title": "## 🐛 Bug 修复",
-                  "labels": ["fix", "bug"]
-                },
-                {
-                  "title": "## 🔧 其他更改",
-                  "labels": []
-                }
-              ],
-              "template": "#{{CHANGELOG}}\n\n**完整提交记录**: #{{RELEASE_DIFF}}",
-              "pr_template": "- #{{TITLE}} (#{{NUMBER}})",
-              "empty_template": "- 无重大更改",
-              "transformers": [],
-              "label_extractor": [
-                {
-                  "pattern": "^(feat|fix|docs|style|refactor|perf|test|chore)(\\(.*\\))?:",
-                  "target": "$1"
-                }
-              ],
-              "commit_type": "commits",
-              "commit_template": "- {{subject}}"
-            }
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          # 获取上一个 tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          echo "Previous tag: $PREV_TAG"
+
+          if [ -z "$PREV_TAG" ]; then
+            # 首次发布，获取所有提交
+            COMMITS=$(git log --pretty=format:"- %s" -20)
+          else
+            # 获取两个 tag 之间的提交
+            COMMITS=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD)
+          fi
+
+          # 如果没有提交记录
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- 无更新记录"
+          fi
+
+          echo "Changelog:"
+          echo "$COMMITS"
+
+          # 输出到 GitHub Actions
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
